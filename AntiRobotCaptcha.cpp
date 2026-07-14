@@ -283,7 +283,10 @@ bool CAntiRobot::Check(ANTIROBOT_IP Ip, int Num, CMaaString Hash, CMaaString *pe
 {
     if  (Num < 1)
     {
-        pexterr && pexterr->Format("Num = %d (< 1)", Num);
+        if (pexterr)
+        {
+            pexterr->Format("Num = %d (< 1)", Num);
+        }
         return false;
     }
     const _dword t = (_dword)time(nullptr);
@@ -292,7 +295,10 @@ bool CAntiRobot::Check(ANTIROBOT_IP Ip, int Num, CMaaString Hash, CMaaString *pe
         if  (m_Recs[i].m_Ip == Ip)
         {
             CMaaString temp(m_Recs[i].m_Hash, 8, CMaaString::eMemString);
-            pexterr && pexterr->Format("%S\ni=%d, Hash[i]=%S, m_Recs[i].m_Hash=%S, t-m_Recs[i].m_Time=%d, m_Recs[i].m_Tries=%d", pexterr, i, &Hash, &temp, (int)(t-m_Recs[i].m_Time), m_Recs[i].m_Tries);
+            if (pexterr)
+            {
+                pexterr->Format("%S\ni=%d, Hash[i]=%S, m_Recs[i].m_Hash=%S, t-m_Recs[i].m_Time=%d, m_Recs[i].m_Tries=%d", pexterr, i, &Hash, &temp, (int)(t - m_Recs[i].m_Time), m_Recs[i].m_Tries);
+            }
         }
         if  (m_Recs[i].m_Ip == Ip && (Hash.IsEmpty() || Hash == CMaaString(m_Recs[i].m_Hash, 8, CMaaString::eMemString)) && (_sdword)(m_Recs[i].m_Time - t) > -m_MaxCaptcheValidStore && (_sdword)(m_Recs[i].m_Time - t) < m_MaxCaptcheValidStore && m_Recs[i].m_Tries < (_dword)m_MaxTriesNumber)
         {
@@ -348,12 +354,18 @@ bool CAntiRobot::Check(ANTIROBOT_IP Ip, int Num, CMaaString Hash, CMaaString *pe
                     }
                     else
                     {
-                        pexterr && pexterr->Format("Num=%d != ... arg1=%d, arg2=%d, op=%c", Num, m_Recs[i].m_Arg1, m_Recs[i].m_Arg2, (char)m_Recs[i].m_Op);
+                        if (pexterr)
+                        {
+                            pexterr->Format("Num=%d != ... arg1=%d, arg2=%d, op=%c", Num, m_Recs[i].m_Arg1, m_Recs[i].m_Arg2, (char)m_Recs[i].m_Op);
+                        }
                     }
                 }
                 else
                 {
-                    pexterr && pexterr->Format("m_Recs[i].m_Tries >= MAX_TRY_PATTERN (%d >= %d)", m_Recs[i].m_Tries, MAX_TRY_PATTERN);
+                    if (pexterr)
+                    {
+                        pexterr->Format("m_Recs[i].m_Tries >= MAX_TRY_PATTERN (%d >= %d)", m_Recs[i].m_Tries, MAX_TRY_PATTERN);
+                    }
                 }
             }
         }
