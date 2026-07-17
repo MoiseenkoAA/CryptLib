@@ -381,7 +381,7 @@ public:
     {
         if  ((unsigned)Index >= (unsigned)m_Size)
         {
-            throw;
+            throw "LongInt2::operator [] Index out of range";
         }
         return m_Number[Index];
     }
