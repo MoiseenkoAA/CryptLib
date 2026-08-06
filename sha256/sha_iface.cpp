@@ -7,7 +7,7 @@
 //#include "sha.h"
 //#include "sha-private.h"
 
-CSHACacl::CSHACacl(SHAversion HashNo)
+CSHACalc::CSHACalc(SHAversion HashNo)
 {
     memset(&m_ctx, '\343', sizeof(m_ctx)); // force bad data into struct
     if (HashNo != SHA1 && HashNo != SHA224 && HashNo != SHA256 && HashNo != SHA384 && HashNo != SHA512)
@@ -19,27 +19,27 @@ CSHACacl::CSHACacl(SHAversion HashNo)
     if (m_err != shaSuccess)
     {
         CMaaString err;
-        err.Format("CSHACacl::CSHACacl(): Reset Error %d", m_err);
+        err.Format("CSHACalc::CSHACalc(): Reset Error %d", m_err);
         throw err;
     }
 }
-CSHACacl::~CSHACacl()
+CSHACalc::~CSHACalc()
 {
     memset(&m_ctx, '\343', sizeof(m_ctx)); // force bad data into struct
     m_Hash.Fill('\0');
     m_err = 0;
 }
-void CSHACacl::Update(const void * ptr, unsigned int Len)
+void CSHACalc::Update(const void * ptr, unsigned int Len)
 {
     m_err = USHAInput(&m_ctx, (const uint8_t*)ptr, Len);
     if (m_err != shaSuccess)
     {
         CMaaString err;
-        err.Format("CSHACacl::Update(): shaInput Error %d", m_err);
+        err.Format("CSHACalc::Update(): shaInput Error %d", m_err);
         throw err;
     }
 }
-int CSHACacl::HashSize() noexcept
+int CSHACalc::HashSize() noexcept
 {
     switch(m_ctx.whichSha)
     {
@@ -56,7 +56,7 @@ int CSHACacl::HashSize() noexcept
     }
     return 0; // err
 }
-void CSHACacl::GetHash(void * ptr, int bits, int bitcount) // HashSize() bytes;
+void CSHACalc::GetHash(void * ptr, int bits, int bitcount) // HashSize() bytes;
 {
     if (bitcount > 0)
     {
@@ -64,7 +64,7 @@ void CSHACacl::GetHash(void * ptr, int bits, int bitcount) // HashSize() bytes;
         if (m_err != shaSuccess)
         {
             CMaaString err;
-            err.Format("CSHACacl::GetHash(): USHAFinalBits Error %d", m_err);
+            err.Format("CSHACalc::GetHash(): USHAFinalBits Error %d", m_err);
             throw err;
         }
     }
@@ -72,11 +72,11 @@ void CSHACacl::GetHash(void * ptr, int bits, int bitcount) // HashSize() bytes;
     if (m_err != shaSuccess)
     {
         CMaaString err;
-        err.Format("CSHACacl::GetHash(): shaResult Error %d", m_err);
+        err.Format("CSHACalc::GetHash(): shaResult Error %d", m_err);
         throw err;
     }
 }
-CMaaString CSHACacl::GetHash(int bits, int bitcount) // HashSize() bytes string
+CMaaString CSHACalc::GetHash(int bits, int bitcount) // HashSize() bytes string
 {
     if (m_Hash.IsEmpty())
     {
@@ -89,11 +89,11 @@ CMaaString CSHACacl::GetHash(int bits, int bitcount) // HashSize() bytes string
     }
     return m_Hash;
 }
-CMaaString CSHACacl::GetTextHash(int bits, int bitcount) // 16 bytes string
+CMaaString CSHACalc::GetTextHash(int bits, int bitcount) // 16 bytes string
 {
     return GetHash(bits, bitcount).DisplayHex();
 }
-bool CSHACacl::ChkPassword(CMaaString password, CMaaString Hash)
+bool CSHACalc::ChkPassword(CMaaString password, CMaaString Hash)
 {
     SHAversion HashNo;
     if (Hash.IsLeft("sha1(", 5))
@@ -151,12 +151,12 @@ bool CSHACacl::ChkPassword(CMaaString password, CMaaString Hash)
     {
         return false;
     }
-    CSHACacl c(HashNo);
+    CSHACalc c(HashNo);
     c.Update(Salt, (warning_int)Salt.Length());
     c.Update(password, (warning_int)password.Length());
     return Hash == c.GetHash();
 }
-CMaaString CSHACacl::HashPassword(CMaaString password, SHAversion HashNo)
+CMaaString CSHACalc::HashPassword(CMaaString password, SHAversion HashNo)
 {
     CMaaString Hash("", 1);
     const char * name = nullptr;
@@ -180,7 +180,7 @@ CMaaString CSHACacl::HashPassword(CMaaString password, SHAversion HashNo)
     default:
         return Hash; // err
     }
-    CSHACacl c(HashNo);
+    CSHACalc c(HashNo);
     CMaaString Salt(nullptr, c.HashSize());
     if (Salt.Length() == c.HashSize())
     {

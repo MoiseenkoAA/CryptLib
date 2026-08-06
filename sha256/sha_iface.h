@@ -1,12 +1,12 @@
 
-class CSHACacl
+class CSHACalc
 {
      int m_err;
      USHAContext m_ctx;
      CMaaString m_Hash;
 public:
-     CSHACacl(SHAversion HashNo = SHA256);
-     ~CSHACacl();
+     CSHACalc(SHAversion HashNo = SHA256);
+     ~CSHACalc();
      void Update(const void * ptr, unsigned int Len);
      int HashSize() noexcept;
      void GetHash(void * ptr, int bits = 0, int bitcount = 0); // HashSize() bytes;
@@ -20,23 +20,23 @@ public:
 int test_sha()
 {
     CMaaString fff = CMaaFile("main.cpp", CMaaFile::eR_SrSw, eNoExcept).Read();
-    CSHACacl c;
+    CSHACalc c;
     c.Update(fff, fff.Length());
     CMaaString h = c.GetTextHash();
     __utf8_printf("hash of main.cpp is %S\n", &h);
     h = c.GetTextHash();
     __utf8_printf("hash of main.cpp is %S\n", &h);
     CMaaString p = "abcff";
-    h = CSHACacl::HashPassword(p);
+    h = CSHACalc::HashPassword(p);
     __utf8_printf("HashPassword of %S is %S\n", &p, &h);
-    __utf8_printf("test ChkPassword(%S,%S): %s\n", &p, &p, CSHACacl::ChkPassword(p, p) ? "true" : "false");
-    __utf8_printf("test ChkPassword(%S,%S): %s\n", &p, &h, CSHACacl::ChkPassword(p, h) ? "true" : "false");
-    __utf8_printf("test ChkPassword(%SX,%S): %s\n", &p, &p, CSHACacl::ChkPassword(p + "X", p) ? "true" : "false");
-    __utf8_printf("test ChkPassword(,): %s\n", CSHACacl::ChkPassword("", "") ? "true" : "false");
-    __utf8_printf("test ChkPassword(,\\0): %s\n", CSHACacl::ChkPassword("", CMaaString("", 1)) ? "true" : "false");
-    __utf8_printf("test ChkPassword(\\0,\\0): %s\n", CSHACacl::ChkPassword(CMaaString("", 1), CMaaString("", 1)) ? "true" : "false");
+    __utf8_printf("test ChkPassword(%S,%S): %s\n", &p, &p, CSHACalc::ChkPassword(p, p) ? "true" : "false");
+    __utf8_printf("test ChkPassword(%S,%S): %s\n", &p, &h, CSHACalc::ChkPassword(p, h) ? "true" : "false");
+    __utf8_printf("test ChkPassword(%SX,%S): %s\n", &p, &p, CSHACalc::ChkPassword(p + "X", p) ? "true" : "false");
+    __utf8_printf("test ChkPassword(,): %s\n", CSHACalc::ChkPassword("", "") ? "true" : "false");
+    __utf8_printf("test ChkPassword(,\\0): %s\n", CSHACalc::ChkPassword("", CMaaString("", 1)) ? "true" : "false");
+    __utf8_printf("test ChkPassword(\\0,\\0): %s\n", CSHACalc::ChkPassword(CMaaString("", 1), CMaaString("", 1)) ? "true" : "false");
     p += "X";
-    __utf8_printf("test ChkPassword(%S,%S): %s\n", &p, &h, CSHACacl::ChkPassword(p, h) ? "true" : "false");
+    __utf8_printf("test ChkPassword(%S,%S): %s\n", &p, &h, CSHACalc::ChkPassword(p, h) ? "true" : "false");
     return 0;
 }
 #endif
