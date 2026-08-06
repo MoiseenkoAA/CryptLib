@@ -314,7 +314,7 @@ CMaaString CNtlmProxyAuth::GetType3Message(
      MD4Update(&context, nt_pw, 2*len);
      MD4Final(nt_hpw, &context);
      */
-    CMD4Cacl md4;
+    CMD4Calc md4;
     md4.Update(nt_pw, 2*len);
     md4.GetHash(nt_hpw);
 
@@ -539,7 +539,7 @@ CMaaString CNtlmv2ProxyAuth::getNTLM2SessionResponse(CMaaString password,
     // MessageDigest md5 = MessageDigest.getInstance("MD5");
     // md5.update(challenge);
     // md5.update(clientNonce);
-    CMD4Cacl md5;
+    CMD4Calc md5;
     md5.Update(challenge, (warning_int)challenge.Length());
     md5.Update(clientNonce, (warning_int)clientNonce.Length());
     CMaaString digest = md5.GetHash();
@@ -614,7 +614,7 @@ CMaaString CNtlmv2ProxyAuth::ntlmHash(CMaaString password)
 
     //unsigned char nt_hpw[21];
 
-    CMD4Cacl md4;
+    CMD4Calc md4;
     md4.Update(nt_pw, (warning_int)nt_pw.Length());
     //md4.GetHash(digest);//nt_hpw);
 
@@ -791,12 +791,12 @@ CMaaString CNtlmv2ProxyAuth::hmacMD5(CMaaString data, CMaaString key)
         opad[i] = opad[i] ^ key[i];
     }
     CMaaString content = ipad + data;
-    CMD5Cacl md5;
+    CMD5Calc md5;
     md5.Update(content, (warning_int)content.Length());
     data = md5.GetHash();
 
     content = opad + data;
-    CMD5Cacl md5_;
+    CMD5Calc md5_;
     md5_.Update(content, (warning_int)content.Length());
     return md5_.GetHash();
 }
@@ -1002,7 +1002,7 @@ CMaaString CNtlmv2ProxyAuth::GetType3Message(
      MD4Update(&context, nt_pw, 2*len);
      MD4Final(nt_hpw, &context);
      */
-    CMD4Cacl md4;
+    CMD4Calc md4;
     md4.Update(nt_pw, 2*len);
     md4.GetHash(nt_hpw);
 

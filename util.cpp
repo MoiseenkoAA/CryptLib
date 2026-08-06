@@ -145,7 +145,7 @@ static void des_enc(uint8_t* key, DES_cblock* data, DES_cblock* result) noexcept
 static void md4_enc(uint8_t* data, size_t data_len, uint8_t* result) noexcept
 {
     //MD4(data, data_len, result);
-	CMD4Cacl c;
+	CMD4Calc c;
 	c.Update(data, (unsigned)data_len);
 	c.GetHash(result);
 }
@@ -153,7 +153,7 @@ static void md4_enc(uint8_t* data, size_t data_len, uint8_t* result) noexcept
 static void md5_enc(uint8_t* data, size_t data_len, uint8_t* result) noexcept
 {
     //MD5(data, data_len, result);  
-	CMD5Cacl c;
+	CMD5Calc c;
 	c.Update(data, (unsigned)data_len);
 	c.GetHash(result);
 }
@@ -181,7 +181,7 @@ static void hmac_md5_enc(void* key, int key_len, uint8_t* data, int data_len, ui
 	if (key_len > 16)
 	{
 		memset(TruncKey, 0, 16);
-		CMD5Cacl md5_1;
+		CMD5Calc md5_1;
 		md5_1.Update(key, key_len);
 		md5_1.GetHash(TruncKey);
 		key_ = TruncKey;
@@ -198,12 +198,12 @@ static void hmac_md5_enc(void* key, int key_len, uint8_t* data, int data_len, ui
 	}
 	char data2[16];
 	memset(data2, 0, sizeof(data2));
-	CMD5Cacl md5_2;
+	CMD5Calc md5_2;
 	md5_2.Update(ipad, 64);
 	md5_2.Update(data, data_len);
 	md5_2.GetHash(data2);
 
-	CMD5Cacl md5_3;
+	CMD5Calc md5_3;
 	md5_3.Update(opad, 64);
 	md5_3.Update(data2, 16);
 	md5_3.GetHash(digest);
