@@ -108,7 +108,7 @@ void pr(const char * txt, LongInt2 &x)
 //    необходимо для преобразования Монтгомери
 // 4. Создается таблица умножения числа P от P до P*255
 //------------------------------------------------------------------------------
-CMyExponent5::CMyExponent5(void * P, _dword Size)
+CMyExponent5::CMyExponent5(const void * P, _dword Size)
 {
     LongInt2 lP(P, m_InitSize = Size);
     Init(lP);
@@ -117,6 +117,59 @@ CMyExponent5::CMyExponent5(const LongInt2 &P)
 {
     m_InitSize = P.GetSize();
     Init(P);
+}
+
+CMyExponent5::CMyExponent5(const CMyExponent5& That)
+{
+    m_InitSize = That.m_InitSize;
+    m_RealSize = That.m_RealSize;
+    m_BSize = That.m_BSize;
+    m_DWSize = That.m_DWSize;
+    m_k = That.m_k;
+    m_complexity = That.m_complexity;
+    m_crc = That.m_crc;
+    m_rrc = That.m_rrc;
+    m_mulc = That.m_mulc;
+    m_sqrc = That.m_sqrc;
+    int i;
+    m_P = nullptr;
+    m_R2 = nullptr;
+    for (i = 0; i < 255; i++)
+    {
+        m_MulTable[i] = nullptr;
+    }
+
+    try
+    {
+        m_P = TL_NEW LongInt2(m_BSize);
+        *m_P = *That.m_P;
+        m_R2 = TL_NEW LongInt2(m_BSize);
+        *m_R2 = *That.m_R2;
+
+        m_MulTable[0] = TL_NEW LongInt2(m_BSize + LONGINT_MUL_SPACE);
+        *m_MulTable[0] = *m_P;
+
+        for (int i = 1; i < 255; i++)
+        {
+            m_MulTable[i] = TL_NEW LongInt2(m_BSize + LONGINT_MUL_SPACE);
+            *m_MulTable[i] = *That.m_MulTable[i];
+        }
+        memcpy(m_MulIndex, That.m_MulIndex, sizeof(m_MulIndex));
+    }
+    catch (...)
+    {
+        delete m_P;
+        //delete m_R;
+        delete m_R2;
+        for (i = 0; i < 255; i++)
+        {
+            delete m_MulTable[i];
+        }
+        throw;
+    }
+    memcpy(m_TwoTab, That.m_TwoTab, sizeof(m_TwoTab));
+    memcpy(m_OddTab, That.m_OddTab, sizeof(m_OddTab));
+    m_Back = That.m_Back;
 }
 
 static int InvMon1(_dword n, int Log2Q) noexcept
@@ -407,7 +460,7 @@ void CMyExponent5::Reduce(LongInt2 &Result)
 // X      -    показатель
 // Y      -    результат
 //------------------------------------------------------------------------------
-bool CMyExponent5::Exponent(void * A, void * X, void * Y)
+bool CMyExponent5::Exponent(const void * A, const void * X, void * Y)
 {
     LongInt2 a(m_BSize);     a.LoadFromMem(A, m_InitSize);
     LongInt2 x(m_BSize);     x.LoadFromMem(X, m_InitSize);

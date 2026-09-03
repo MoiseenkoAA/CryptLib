@@ -92,9 +92,10 @@ public:
     void CreateR_2R();
 public:
     CMyExponent5(const LongInt2 &P); // P - odd number for modulo arithmetics
+    CMyExponent5(const CMyExponent5& That);
     ~CMyExponent5();
     bool Exponent(const LongInt2 &A, const LongInt2 &X, LongInt2 &Y);
 
-    CMyExponent5(void * P, _dword Size = 64);
-    bool Exponent(void * A, void * X, void * Y); // all sizes is m_InitSize==Size
+    CMyExponent5(const void * P, _dword Size = 64);
+    bool Exponent(const void * A, const void * X, void * Y); // all sizes is m_InitSize==Size
 };

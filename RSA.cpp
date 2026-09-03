@@ -62,7 +62,17 @@
 #include "stdafx.h"
 #include "temp.h"
 
-int RSAEncrypt(LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out, time_t Time)
+CMyExponent5* RSACreateExponent(const LongInt2& n)
+{
+    int R = n.GetRealSize();
+    if (R < 16)
+    {
+        return nullptr;
+    }
+    return TL_NEW CMyExponent5(n(), R);
+}
+
+int RSAEncrypt(const LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out, time_t Time, CMyExponent5* pMyExp)
 {
     //*Out = nullptr;
     int R = n.GetRealSize();
@@ -70,6 +80,7 @@ int RSAEncrypt(LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out
     {
         return -1;
     }
+    CMaaClassPtr<CMyExponent5> pExp(nullptr);
     try
     {
         const int Blocks = (len + 4 + R - 9) / (R - 8);
@@ -78,7 +89,13 @@ int RSAEncrypt(LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out
 
         LongInt2 PlainText(R);
         LongInt2 ChipherText(R);
-        CMyExponent MyExp(n(), R);
+        if (!pMyExp)
+        {
+            if (!(pMyExp = pExp = RSACreateExponent(n)))
+            {
+                return -11;
+            }
+        }
         int BlkNum = 0;
         while(len > 0 || !BlkNum)
         {
@@ -101,7 +118,7 @@ int RSAEncrypt(LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out
             GetRnd(PlainText() + R - 3, 2);
 
             ChipherText.Zero();
-            MyExp.Exponent(PlainText(), x(), ChipherText());
+            pMyExp->Exponent(PlainText(), x(), ChipherText());
 
             if  (BlkNum * R > OutSize)
             {
@@ -120,7 +137,7 @@ int RSAEncrypt(LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out
     return -10;
 }
 
-int RSADecrypt(LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out, time_t *Time)
+int RSADecrypt(const LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out, time_t* Time, CMyExponent5* pMyExp)
 {
     time_t tt;
     if  (!Time)
@@ -138,6 +155,7 @@ int RSADecrypt(LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out
     {
         return -1;
     }
+    CMaaClassPtr<CMyExponent5> pExp(nullptr);
     try
     {
         const int Blocks = len / R;
@@ -148,12 +166,18 @@ int RSADecrypt(LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out
 
         LongInt2 ChipherText(R);
         LongInt2 PlainText(R);
-        CMyExponent MyExp(n(), R);
+        if (!pMyExp)
+        {
+            if (!(pMyExp = pExp = RSACreateExponent(n)))
+            {
+                return -11;
+            }
+        }
         for (int i = 0; i < Blocks; i++)
         {
             memcpy(ChipherText(), (char *)ptr + R * i, R);
             PlainText.Zero();
-            MyExp.Exponent(ChipherText(), x(), PlainText());
+            pMyExp->Exponent(ChipherText(), x(), PlainText());
 
             if  (PlainText[R - 4] != (unsigned char)i)
             {

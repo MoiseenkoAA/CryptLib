@@ -315,7 +315,11 @@ public:
     LongInt2 & operator >>= (int x);
     LongInt2 & operator <<= (int x);
 
-    unsigned char * operator () () noexcept
+    unsigned char* operator () () noexcept
+    {
+        return m_Number;
+    }
+    const unsigned char* operator () () const noexcept
     {
         return m_Number;
     }
