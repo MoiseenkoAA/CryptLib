@@ -891,7 +891,7 @@ void ___mainCrypt ()
 #undef CMyExponent2
 #endif
 
-CMyExponent2::CMyExponent2 ( void * P, _dword Size )
+CMyExponent2::CMyExponent2(const void * P, _dword Size)
 {
     int i;
     m_P = nullptr;
@@ -939,7 +939,7 @@ CMyExponent2::CMyExponent2 ( void * P, _dword Size )
         throw;
     }
 }
-CMyExponent2::~CMyExponent2 ()
+CMyExponent2::~CMyExponent2()
 {
     for ( int i = MUL_TABLE_SIZE; i; )
     {
@@ -950,7 +950,7 @@ CMyExponent2::~CMyExponent2 ()
 
 _qword t_mul = 0, t_rest = 0;
 
-void CMyExponent2::Exponent ( void * A, void * X, void * Y )
+void CMyExponent2::Exponent(const void * A, const void * X, void * Y)
 {
     LongInt2 q ( m_P, m_Size );
     LongInt2 Ai ( 2 * m_Size );

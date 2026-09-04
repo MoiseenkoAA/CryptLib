@@ -62,9 +62,9 @@
 #ifndef __MAA_CRYPTLIB_RSA_H
 #define __MAA_CRYPTLIB_RSA_H
 //---------------------------------------------------------------------------------------------------
-CMyExponent5* RSACreateExponent(const LongInt2& n);
-int RSAEncrypt(const LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out, time_t Time = time(nullptr), CMyExponent5* pMyExp = nullptr);
-int RSADecrypt(const LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out, time_t* Time = nullptr, CMyExponent5* pMyExp = nullptr);
+CMyExponent* RSACreateExponent(const LongInt2& n);
+int RSAEncrypt(const LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out, time_t Time = time(nullptr), CMyExponent* pMyExp = nullptr);
+int RSADecrypt(const LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out, time_t* Time = nullptr, CMyExponent* pMyExp = nullptr);
 //---------------------------------------------------------------------------------------------------
 /*CMaaString*/ CMaaString GetFingerprint(LongInt2 &n, LongInt2 &x);
 //---------------------------------------------------------------------------------------------------

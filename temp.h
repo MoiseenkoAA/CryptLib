@@ -69,6 +69,12 @@
 #include "Gost_BS_MAA.h"
 #include "Kuznechik_MAA.h"
 #include "longint2.h"
+
+//#define CMyExponent2 CMyExponent3
+//#define CMyExponent CMyExponent2
+#define CMyExponent CMyExponent5
+class CMyExponent;
+
 #include "RSA.h"
 //#include "exp3.h"
 //#include "exp4.h"
@@ -146,13 +152,10 @@ public:
     //   P    -    простое число по модулю которого производится умножение
     //   Size -    размер в байтах простого числа, показателя и т.п.
     //------------------------------------------------------------------------------
-    CMyExponent2 ( void * P = nullptr, _dword Size = 64 );
-    ~CMyExponent2 ();
-    void Exponent ( void * A, void * X, void * Y );
+    CMyExponent2(const void * P = nullptr, _dword Size = 64);
+    ~CMyExponent2();
+    void Exponent(const void * A, const void * X, void * Y);
 };
-
-//#define CMyExponent2 CMyExponent3
-#define CMyExponent CMyExponent5
 
 int IsPrime(LongInt2 &p, int pass = 0, bool (* ProgressProc)(int pass, int n, int m, void * Param) = nullptr, void * Param = nullptr);
 int GenPrime(LongInt2 &p, int R = 0, bool (* ProgressProc)(int pass, int n, int m, void * Param) = nullptr, void * Param = nullptr);

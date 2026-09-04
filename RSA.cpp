@@ -62,17 +62,17 @@
 #include "stdafx.h"
 #include "temp.h"
 
-CMyExponent5* RSACreateExponent(const LongInt2& n)
+CMyExponent* RSACreateExponent(const LongInt2& n)
 {
     int R = n.GetRealSize();
     if (R < 16)
     {
         return nullptr;
     }
-    return TL_NEW CMyExponent5(n(), R);
+    return TL_NEW CMyExponent(n(), R);
 }
 
-int RSAEncrypt(const LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out, time_t Time, CMyExponent5* pMyExp)
+int RSAEncrypt(const LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out, time_t Time, CMyExponent* pMyExp)
 {
     //*Out = nullptr;
     int R = n.GetRealSize();
@@ -80,7 +80,7 @@ int RSAEncrypt(const LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt
     {
         return -1;
     }
-    CMaaClassPtr<CMyExponent5> pExp(nullptr);
+    CMaaClassPtr<CMyExponent> pExp(nullptr);
     try
     {
         const int Blocks = (len + 4 + R - 9) / (R - 8);
@@ -137,7 +137,7 @@ int RSAEncrypt(const LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt
     return -10;
 }
 
-int RSADecrypt(const LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out, time_t* Time, CMyExponent5* pMyExp)
+int RSADecrypt(const LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt2 &Out, time_t* Time, CMyExponent* pMyExp)
 {
     time_t tt;
     if  (!Time)
@@ -155,7 +155,7 @@ int RSADecrypt(const LongInt2 &n, LongInt2 &x, const void *ptr, int len, LongInt
     {
         return -1;
     }
-    CMaaClassPtr<CMyExponent5> pExp(nullptr);
+    CMaaClassPtr<CMyExponent> pExp(nullptr);
     try
     {
         const int Blocks = len / R;
