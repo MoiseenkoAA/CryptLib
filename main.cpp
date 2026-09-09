@@ -14,6 +14,8 @@ static int gExpCount = 0;
 int gMyRestCount=0;
 int gReduceCount=0;
 
+static constexpr CMaaAtomicFastMutex0W sLock;
+
 CCryptRandom::CCryptRandom(int Mode, bool bThrow)
 :   m_Mode(Mode)
 #ifdef __unix__
@@ -23,38 +25,32 @@ CCryptRandom::CCryptRandom(int Mode, bool bThrow)
     m_nRequestsProcessed(0)
 #endif
 {
-    FILE * f = nullptr;//fopen("logs\\_ccr_1.txt", "a+b");
-    if  (f)
+    CMaaFile f;//("logs\\_ccr_1.txt", CMaaFile::eAC_SrSw);
+    if  (f.IsOpen())
     {
-        fprintf(f, "CCryptRandom::CCryptRandom()\r\n");
+        f.fprintf("CCryptRandom::CCryptRandom()\r\n");
     }
 #ifdef _WIN32
     m_hProv = 0;
     const BOOL bres = CryptAcquireContext(&m_hProv, nullptr, nullptr, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT|CRYPT_SILENT);
-    const DWORD dw = GetLastError();
-    if  (f)
+    if  (f.IsOpen())
     {
-        fprintf(f, "CryptAcquireContext() return %s, m_hProv = %p\r\n", bres ? "true" : "false", (void *)m_hProv);
+        const DWORD dw = GetLastError();
+        f.fprintf("CryptAcquireContext() return %s, m_hProv = %p\r\n", bres ? "true" : "false", (void *)m_hProv);
         if  (!bres)
         {
             XTOOLastError err("error: ", dw);
-            fprintf(f, "%s\r\n", err.GetMsg());
+            f.fprintf("%s\r\n", err.GetMsg());
         }
     }
     if  (!m_hProv && bThrow && !(Mode & eAllowRunTimeRandForStartingKey))
     {
-        if  (f)
-        {
-            fclose(f);
-        }
+        //f.Close();
         throw 1;
     }
 #endif
     memset(m_gost_key_and_salt, 0, sizeof(m_gost_key_and_salt));
-    if  (f)
-    {
-        fclose(f);
-    }
+    //f.Close();
 }
 
 CCryptRandom::~CCryptRandom()
@@ -342,14 +338,11 @@ CCryptRandom & GetGlobal___CCryptRnd() noexcept
     if  (!gpCCryptRandom)
     {
         __GLock__lib(true);
-        __GLock__usr(true);
-        CMaaWin32Locker<CMaa_gLock_usr_Mutex> gLocker(gLock);
-        gLocker.LockM();
+        CMaaAtomicFastMutexLocker gLocker(sLock); // automatic scope locker
         if  (!gpCCryptRandom)
         {
-            gpCCryptRandom = new CCryptRandom; //(CCryptRandom::eForcedOSCryptFunctionsForStartingKeyOnly);
+            gpCCryptRandom = TL_NEW CCryptRandom; //(CCryptRandom::eForcedOSCryptFunctionsForStartingKeyOnly);
         }
-        gLocker.UnLockM();
     }
     return *gpCCryptRandom;
 }
@@ -359,14 +352,11 @@ CGostBsMaa & GetGlobal___gGostBsMaa() noexcept
     if  (!gpGostBsMaa)
     {
         __GLock__lib(true);
-        __GLock__usr(true);
-        CMaaWin32Locker<CMaa_gLock_usr_Mutex> gLocker(gLock);
-        gLocker.LockM();
+        CMaaAtomicFastMutexLocker gLocker(sLock); // automatic scope locker
         if  (!gpGostBsMaa)
         {
-            gpGostBsMaa = new CGostBsMaa;
+            gpGostBsMaa = TL_NEW CGostBsMaa;
         }
-        gLocker.UnLockM();
     }
     return *gpGostBsMaa;
 }
@@ -379,12 +369,10 @@ public:
     CMaaCLGlobDel() noexcept
     {
         __GLock__lib(true);
-        __GLock__usr(true);
     }
     ~CMaaCLGlobDel()
     {
-        CMaaWin32Locker<CMaa_gLock_usr_Mutex> gLocker(gLock);
-        gLocker.LockM();
+        CMaaAtomicFastMutexLocker gLocker(sLock); // automatic scope locker
         if  (gpGostBsMaa)
         {
             delete gpGostBsMaa;
@@ -395,7 +383,6 @@ public:
             delete gpCCryptRandom;
             gpCCryptRandom = nullptr;
         }
-        gLocker.UnLockM();
     }
 };
 

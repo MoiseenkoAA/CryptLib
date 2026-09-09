@@ -112,7 +112,8 @@ class CCryptRandom
     CGostBsMaa m_gost;
     //CMaaAutoInitObject<bool, true> m_b1st;
     bool m_b1st = true;
-    CMaaMutex m_Mutex;
+    //CMaaMutex m_Mutex;
+    CMaaLiteMutex m_Mutex;
 public:
     enum eMode
     {
