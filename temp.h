@@ -108,12 +108,13 @@ class CCryptRandom
     int m_nRequestsProcessed;
     CMaaString m_SeedFn;
 #endif
-    char m_gost_key_and_salt[2 * 32 + 8];
+    char m_gost_key[32];
+    std::atomic<_qword> m_salt;
     CGostBsMaa m_gost;
     //CMaaAutoInitObject<bool, true> m_b1st;
     bool m_b1st = true;
     //CMaaMutex m_Mutex;
-    CMaaLiteMutex m_Mutex;
+    //CMaaLiteMutex m_Mutex;
 public:
     enum eMode
     {
@@ -121,7 +122,6 @@ public:
         eOSCryptFunctionsForStartingKey = 0x01,
         eAllowRunTimeRandForStartingKey = 0x02,
         eForcedOSCryptFunctionsForStartingKeyOnly = 0x04,
-        eSyncronizeThreads = 0x08,
         eDefaultFast =
 #ifdef _WIN32
         eOSCryptFunctionsOnly         | eAllowRunTimeRandForStartingKey
@@ -129,8 +129,7 @@ public:
         eOSCryptFunctionsForStartingKey | eAllowRunTimeRandForStartingKey | eForcedOSCryptFunctionsForStartingKeyOnly
 #endif
         ,
-        eDefaultSyncronized = eDefaultFast | eSyncronizeThreads,
-        eDefault = eDefaultSyncronized
+        eDefault = eDefaultFast
     };
     CCryptRandom(int Mode = eDefault, bool bThrow = true);
     int GetSeed(void * ptr, int size);

@@ -14,8 +14,6 @@ static int gExpCount = 0;
 int gMyRestCount=0;
 int gReduceCount=0;
 
-static constexpr CMaaAtomicFastMutex0W sLock;
-
 CCryptRandom::CCryptRandom(int Mode, bool bThrow)
 :   m_Mode(Mode)
 #ifdef __unix__
@@ -24,6 +22,7 @@ CCryptRandom::CCryptRandom(int Mode, bool bThrow)
     //     m_file(nullptr, nullptr, false),
     m_nRequestsProcessed(0)
 #endif
+    , m_salt(0)
 {
     CMaaFile f;//("logs\\_ccr_1.txt", CMaaFile::eAC_SrSw);
     if  (f.IsOpen())
@@ -49,7 +48,7 @@ CCryptRandom::CCryptRandom(int Mode, bool bThrow)
         throw 1;
     }
 #endif
-    memset(m_gost_key_and_salt, 0, sizeof(m_gost_key_and_salt));
+    memset(m_gost_key, 0, sizeof(m_gost_key));
     //f.Close();
 }
 
@@ -64,20 +63,19 @@ CCryptRandom::~CCryptRandom()
     //if  ('u'<'r')
     if  (m_nRequestsProcessed)
     {
-        char ptr[64];
+        char ptr[32];
         memset(ptr, 0, (int)sizeof(ptr));
-        if  (Get(ptr, 64))
+        if  (Get(ptr, 32))
         {
-            FlushSeed(ptr, 64);
+            FlushSeed(ptr, 32);
         }
     }
 #endif
-    memset(m_gost_key_and_salt, 0, sizeof(m_gost_key_and_salt));
-    FILE * f = nullptr;//fopen("logs\\_ccr_1.txt", "a+b");
-    if  (f)
+    memset(m_gost_key, 0, sizeof(m_gost_key));
+    CMaaFile f;//("logs\\_ccr_1.txt", CMaaFile::eAC_SrSw);
+    if  (f.IsOpen())
     {
-        fprintf(f, "CCryptRandom::~CCryptRandom()\r\n");
-        fclose(f);
+        f.fprintf("CCryptRandom::~CCryptRandom()\r\n");
     }
 }
 
@@ -95,22 +93,16 @@ bool CCryptRandom::Get(void * ptr, int len) // noexcept
         //printf("point 1\n");
         int nn = 0;
 #ifdef _WIN32
-        if  (m_hProv && CryptGenRandom(m_hProv, sizeof(m_gost_key_and_salt), (LPBYTE)m_gost_key_and_salt))
+        if  (m_hProv && CryptGenRandom(m_hProv, sizeof(m_gost_key), (LPBYTE)m_gost_key))
         {
-            //m_b1st =
-            nn = (int)sizeof(m_gost_key_and_salt);
+            nn = (int)sizeof(m_gost_key);
         }
 #else
-        //printf("point 2\n");
-        char * ptr2 = (char *)m_gost_key_and_salt;
-        int req = (int)sizeof(m_gost_key_and_salt);
+        char * ptr2 = (char *)m_gost_key;
+        int req = (int)sizeof(m_gost_key);
         //if  ('u'<'r')
         {
-            //int x = 
-                GetSeed(ptr2, req);
-            //ptr2 += x;
-            //req -= x;
-            //nn += x;
+            GetSeed(ptr2, req);
         }
         //else
         {
@@ -126,7 +118,6 @@ bool CCryptRandom::Get(void * ptr, int len) // noexcept
                 {
                     break;
                 }
-                //memcpy(ptr2, &___rnd, req >= (int)sizeof(___rnd) ? sizeof(___rnd) : req);
                 if (req >= (int)sizeof(int))
                 {
                     *(int *)ptr2 ^= ___rnd ^ (!iField ? (int)tv.tv_sec : (int)tv.tv_usec);
@@ -139,12 +130,11 @@ bool CCryptRandom::Get(void * ptr, int len) // noexcept
             }
         }
 #endif
-        static char zero[32];
-        if  (nn == (int)sizeof(m_gost_key_and_salt))
+        static constexpr char zero[32] = {};
+        if  (nn == (int)sizeof(m_gost_key))
         {
-            if  (ConstMemcmp(m_gost_key_and_salt, zero, 32) && ConstMemcmp(m_gost_key_and_salt + 32, zero, 32))
+            if  (ConstMemcmp(m_gost_key, zero, 32)) // && ConstMemcmp(m_gost_key + 32, zero, 32))
             {
-                //printf("point 3\n");
                 m_b1st = false;
             }
         }
@@ -176,23 +166,21 @@ bool CCryptRandom::Get(void * ptr, int len) // noexcept
 #endif
             for (int j = 0; j < 10 && m_b1st; j++)
             {
-                for (int i = 0; i < (int)sizeof(m_gost_key_and_salt); i++)
+                for (int i = 0; i < (int)sizeof(m_gost_key); i++)
                 {
-                    m_gost_key_and_salt[i] = (char)rand();
+                    m_gost_key[i] = (char)rand();
                 }
-                if  (ConstMemcmp(m_gost_key_and_salt, zero, 32) && ConstMemcmp(m_gost_key_and_salt + 32, zero, 32))
+                if  (ConstMemcmp(m_gost_key, zero, 32)) // && ConstMemcmp(m_gost_key + 32, zero, 32))
                 {
                     m_b1st = false;
                 }
             }
         }
     }
-    //printf("point 4, 0x%4x\n", m_Mode);
     if  (m_b1st)
     {
         return false;
     }
-    //printf("point 5\n");
     if  (
 #ifdef _WIN32
          m_hProv &&
@@ -208,7 +196,6 @@ bool CCryptRandom::Get(void * ptr, int len) // noexcept
 #ifdef _WIN32
         return CryptGenRandom(m_hProv, len, (LPBYTE) ptr) != FALSE;
 #else
-        //printf("point 6\n");
         int nn = 0;
         char * ptr2 = (char *)ptr;
         int req = (int)len;
@@ -230,33 +217,15 @@ bool CCryptRandom::Get(void * ptr, int len) // noexcept
 #endif
     }
 
-    //printf("test\n");
     _qword Salt;
     const int Mode = m_Mode;
-    if  (Mode & eSyncronizeThreads)
-    {
-        m_Mutex.LockM();
-    }
-    Salt = ++(*(_qword *)(m_gost_key_and_salt + 64));
+    Salt = ++m_salt;
     if  (!Salt)
     {
-        Salt = ++(*(_qword *)(m_gost_key_and_salt + 64));
-    }
-    if  (Mode & eSyncronizeThreads)
-    {
-        m_Mutex.UnLockM();
+        Salt = ++m_salt;
     }
     memset(ptr, 0, len);
-    m_gost.Encrypt(m_gost_key_and_salt, ptr, len, &Salt);
-    if  (Mode & eSyncronizeThreads)
-    {
-        m_Mutex.LockM();
-    }
-    m_gost.Encrypt(m_gost_key_and_salt + 32, m_gost_key_and_salt + 64, 8, &Salt);
-    if  (Mode & eSyncronizeThreads)
-    {
-        m_Mutex.UnLockM();
-    }
+    m_gost.Encrypt(m_gost_key, ptr, len, &Salt);
     Salt = 0;
 #ifdef __unix__
     ++m_nRequestsProcessed;
@@ -279,18 +248,18 @@ int CCryptRandom::GetSeed(void * ptr, int size)
         m_SeedFn.Format2("%D", TMP_SEED_FILE2_FMT, uid);
         f = CMaaFile(m_SeedFn, CMaaFile::eR_SrSw, eNoExcept);
     }
-    char buffer[64];
-    memset(buffer, 0, 64);
+    char buffer[32];
+    memset(buffer, 0, 32);
     if  (f.IsOpen())
     {
-        f.Read(buffer, 64);
+        f.Read(buffer, 32);
     }
     timeval tv;
     gettimeofday(&tv, nullptr);
     srand((tv.tv_sec << 16) ^ (tv.tv_sec >> 16) ^ (tv.tv_usec << 16) ^ (tv.tv_usec >> 16) ^ 1234567890);
     char * p = (char *)&tv;
     int i;
-    for (i = 0; i < (int)sizeof(tv); i++)
+    for (i = 0; i < (int)sizeof(tv) && i + 8 < 32; i++)
     {
         buffer[i + 8] ^= p[i];
     }
@@ -300,17 +269,17 @@ int CCryptRandom::GetSeed(void * ptr, int size)
         buffer[i] ^= *(i + (char*)qw);
     }
     int retsize = 0;
-    for (; size > 0; size -= 64)
+    for (; size > 0; size -= 32)
     {
-        memcpy(ptr, buffer, size >= 64 ? 64 : size);
-        retsize += (size >= 64 ? 64 : size);
-        ptr = (char *)ptr + 64;
+        memcpy(ptr, buffer, size >= 32 ? 32 : size);
+        retsize += (size >= 32 ? 32 : size);
+        ptr = (char *)ptr + 32;
     }
     return retsize;
 }
 int CCryptRandom::FlushSeed(const void * ptr, int size)
 {
-    if  (size >= 64)
+    if  (size >= 32)
     {
         /*
         _qword uid = getuid();
@@ -323,12 +292,14 @@ int CCryptRandom::FlushSeed(const void * ptr, int size)
         CMaaFile f(m_SeedFn, CMaaFile::eRWC_SrSw, "mode=640", eNoExcept);
         if  (f.IsOpen())
         {
-            return (int)f.Write(ptr, 64);
+            return (int)f.Write(ptr, 32);
         }
     }
     return 0;
 }
 #endif
+
+static constexpr CMaaLiteMutex sLock; // CMaaAtomicFastMutex0W
 
 static CCryptRandom* gpCCryptRandom = nullptr;
 static CGostBsMaa * gpGostBsMaa = nullptr;
@@ -341,7 +312,7 @@ CCryptRandom & GetGlobal___CCryptRnd() noexcept
         CMaaAtomicFastMutexLocker gLocker(sLock); // automatic scope locker
         if  (!gpCCryptRandom)
         {
-            gpCCryptRandom = TL_NEW CCryptRandom; //(CCryptRandom::eForcedOSCryptFunctionsForStartingKeyOnly);
+            gpCCryptRandom = new CCryptRandom; //(CCryptRandom::eForcedOSCryptFunctionsForStartingKeyOnly);
         }
     }
     return *gpCCryptRandom;
@@ -355,7 +326,7 @@ CGostBsMaa & GetGlobal___gGostBsMaa() noexcept
         CMaaAtomicFastMutexLocker gLocker(sLock); // automatic scope locker
         if  (!gpGostBsMaa)
         {
-            gpGostBsMaa = TL_NEW CGostBsMaa;
+            gpGostBsMaa = new CGostBsMaa;
         }
     }
     return *gpGostBsMaa;
@@ -368,7 +339,7 @@ class CMaaCLGlobDel
 public:
     CMaaCLGlobDel() noexcept
     {
-        __GLock__lib(true);
+        //__GLock__lib(true);
     }
     ~CMaaCLGlobDel()
     {
@@ -430,7 +401,7 @@ _dword ConstMemcmp(const void* p1, const void* p2, size_t len) noexcept
 #endif
 #endif
 
-CMaaCLGlobDel gCMaaCLGlobDel;
+static const CMaaCLGlobDel gCMaaCLGlobDel;
 
 void GetRnd(void *ptr, int size)
 {
@@ -449,10 +420,10 @@ void GenRnd(LongInt2 &p, int R /* = 0*/)
     }
     p.Zero();
     /*
-        for     (int i = 0; i < R; i++)
-        {
-                p[i] = rand();
-        }
+    for     (int i = 0; i < R; i++)
+    {
+        p[i] = rand();
+    }
     */
     global___Rnd.Get(p(), R);
 }
@@ -582,49 +553,49 @@ void ___mainCrypt ()
 
     int fcnt = 0;
     /*
-        try
+    try
+    {
+        for (int i = 0; i < 1000; i++)
         {
-                for     (int i = 0; i < 1000; i++)
-                {
-               if       (i == 998)
-                        {
-                                static int aa = 0;
-                                aa++;
-                        }
-                        printf("%4d. ", i);
-                        LongInt2 a1(64), a2(32), a3(64);
-                        GenRnd(a1, 64);
-                        GenRnd(a2, 32);
-                        LongInt22 b1(a1(), a1.GetSize()), b2(a2(), a2.GetSize());
-                        LongInt22 b3(a3.GetSize());
-                        a1 %= a2;
-                        //a3.Mul(a1, a2);
-                        //b1.print("b1 = ");
-                        //b2.print("b2 = ");
-                        //b3.Mul(b1, b2);
-               b1 %= b2;
-                        if      (!ConstMemcmp(a1(), b1(), 64))
-                        {
-                                printf("OK\n");
-                        }
-                        else
-                        {
-                                fcnt++;
-                                printf("Fail\n");
-                        }
-                }
+            if (i == 998)
+            {
+                static int aa = 0;
+                aa++;
+            }
+            printf("%4d. ", i);
+            LongInt2 a1(64), a2(32), a3(64);
+            GenRnd(a1, 64);
+            GenRnd(a2, 32);
+            LongInt22 b1(a1(), a1.GetSize()), b2(a2(), a2.GetSize());
+            LongInt22 b3(a3.GetSize());
+            a1 %= a2;
+            //a3.Mul(a1, a2);
+            //b1.print("b1 = ");
+            //b2.print("b2 = ");
+            //b3.Mul(b1, b2);
+            b1 %= b2;
+            if (!ConstMemcmp(a1(), b1(), 64))
+            {
+                printf("OK\n");
+            }
+            else
+            {
+                fcnt++;
+                printf("Fail\n");
+            }
         }
-        catch(const char * message)
-        {
-                printf("catch(message): %s\n", message);
-        }
-        catch(...)
-        {
-                printf("catch(...)\n");
-        }
-        printf("Failures count: %d\n", fcnt);
-        return;
-     */
+    }
+    catch (const char* message)
+    {
+        printf("catch(message): %s\n", message);
+    }
+    catch (...)
+    {
+        printf("catch(...)\n");
+    }
+    printf("Failures count: %d\n", fcnt);
+    return;
+    */
     try
     {
         if  (0)
@@ -681,11 +652,11 @@ void ___mainCrypt ()
             do
             {
                 /*
-                    if   (i)
-                    {
-                         printf("The next does not have Back element:\n");
-                         e.print("e = ");
-                    }
+                if   (i)
+                {
+                    printf("The next does not have Back element:\n");
+                    e.print("e = ");
+                }
                 */
                 GenRnd(e, p_1_q_1.GetRealSize() - 1); // CalcBack works with e < p_1_q_1
 
@@ -752,9 +723,7 @@ void ___mainCrypt ()
         }
 
         printf("RSA:\nPublic key is the pair (n, e)\nPrivate key is d\np and q are the top secret\n");
-
         printf("Failures: %d\n", fcnt);
-
         //printf("gExpCount = %d\n", gExpCount);
 
         return;
@@ -773,13 +742,9 @@ void ___mainCrypt ()
 
     /*
      N = 512/8;
-
      int R = N;
-
      printf("Finding %d bits (%d bytes) prime numbers.\n", R * 8, R);
-
      LongInt2 p(N);
-
      int Errors = 0;
      for  (int nn = 0; nn < 1000; nn++)
      {
@@ -807,9 +772,7 @@ void ___mainCrypt ()
                }
           }
      }
-
      printf("Done. Errors = %d\n", Errors);
-
      */
 
     return;
@@ -868,10 +831,11 @@ void ___mainCrypt ()
      printf ( "Count of Rest = %d\n", gReduceCount );
      */
 
-    /*CExponent Exp2;
-     Exp2.Exponent ( A(), X(), Y2() );
-     Y2.print ( "  Y2= " );
-     */
+    /*
+    CExponent Exp2;
+    Exp2.Exponent ( A(), X(), Y2() );
+    Y2.print ( "  Y2= " );
+    */
 }
 
 #ifdef CMyExponent2
@@ -909,11 +873,12 @@ CMyExponent2::CMyExponent2(const void * P, _dword Size)
                 (* m_MulTable [ i ]) += * m_MulTable [ 0 ];
             }
             /*
-                        for  ( i = 0; i < 5; i++ )
-                        {
-                                printf ( "%2d = ", i );
-                                m_MulTable [ i ] -> print ();
-                        }*/
+            for  ( i = 0; i < 5; i++ )
+            {
+                printf ( "%2d = ", i );
+                m_MulTable [ i ] -> print ();
+            }
+            */
         }
     }
     catch(...)
@@ -1003,9 +968,9 @@ void CMyExponent2::Exponent(const void * A, const void * X, void * Y)
             Ai.CalcRestEx ( Ai, q, m_MulTable );
             //Ai %= q;
             /*if   ( ConstMemcmp ( li (), Ai (), m_Size ) )
-          {
-               printf ( "Mismatch\n" );
-          }*/
+            {
+                printf ( "Mismatch\n" );
+            }*/
         }
     }
 
